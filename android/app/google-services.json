@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "954981334471",
+    "project_id": "fp-ppb-6757a",
+    "storage_bucket": "fp-ppb-6757a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:954981334471:android:a0b8880a26d70419ae2de2",
+        "android_client_info": {
+          "package_name": "com.example.fp_pbb_kel6"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJdlClLgqEFtcj1nmZZplfc31hWieF1pQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
