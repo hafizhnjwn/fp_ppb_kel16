@@ -1,4 +1,5 @@
-import 'package:fp_pbb_kel6/screens/home.dart';
+import 'package:fp_pbb_kel6/app_theme.dart';
+import 'package:fp_pbb_kel6/screens/nav_page.dart';
 import 'package:fp_pbb_kel6/screens/login.dart';
 import 'package:fp_pbb_kel6/screens/register.dart';
 import 'package:flutter/material.dart';
@@ -18,8 +19,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(initialRoute: 'login', routes: {
-      'home': (context) => const HomeScreen(),
+    return MaterialApp(
+      title: 'Instagram Clone',
+      initialRoute: 'login',
+      theme: darkTheme,
+      routes: {
+      'home': (context) => const NavigationPage(),
       'login': (context) => const LoginScreen(),
       'register': (context) => const RegisterScreen(),
     });
