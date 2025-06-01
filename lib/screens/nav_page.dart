@@ -3,6 +3,7 @@ import 'package:fp_pbb_kel6/screens/login.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fp_pbb_kel6/screens/user_page.dart';
+import 'package:fp_pbb_kel6/screens/create_post.dart';
 
 class NavigationPage extends StatefulWidget {
   const NavigationPage({super.key});
@@ -14,6 +15,32 @@ class NavigationPage extends StatefulWidget {
 class _NavigationPageState extends State<NavigationPage> {
   int _currentPageIndex = 0;
 
+  int _getPageIndex(int navIndex) {
+    switch (navIndex) {
+      case 0:
+        return 0;
+      case 1:
+        return 1;
+      case 3:
+        return 2;
+      default:
+        return 0;
+    }
+  }
+
+  int _getNavIndex(int pageIndex) {
+    switch (pageIndex) {
+      case 0:
+        return 0;
+      case 1:
+        return 1;
+      case 2:
+        return 3;
+      default:
+        return 0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
@@ -22,25 +49,35 @@ class _NavigationPageState extends State<NavigationPage> {
         if (snapshot.hasData) {
           final List<Widget> pages = [
             HomePage(userSnaphot: snapshot),
-            Center(child: Text("Placeholder")), // Explore Page
-            Center(child: Text("Placeholder")), // Create Page
+            const Center(child: Text("Explore Page")),
             UserPage(userSnaphot: snapshot),
           ];
+
           return Scaffold(
             body: pages[_currentPageIndex],
             bottomNavigationBar: Container(
               height: 70,
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.grey[900]!, width: 0.5)),
+                border: Border(
+                    top: BorderSide(color: Colors.grey[900]!, width: 0.5)),
               ),
               child: NavigationBar(
                 labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
                 indicatorColor: Colors.transparent,
                 backgroundColor: Colors.black,
-                selectedIndex: _currentPageIndex,
-                onDestinationSelected: (int index) {
+                selectedIndex: _getNavIndex(_currentPageIndex),
+                onDestinationSelected: (int navIndex) {
+                  if (navIndex == 2) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CreatePostScreen(),
+                      ),
+                    );
+                    return;
+                  }
                   setState(() {
-                    _currentPageIndex = index;
+                    _currentPageIndex = _getPageIndex(navIndex);
                   });
                 },
                 destinations: const <Widget>[
@@ -50,9 +87,9 @@ class _NavigationPageState extends State<NavigationPage> {
                     label: 'Home',
                   ),
                   NavigationDestination(
-                    selectedIcon: Icon(Icons.search_outlined),
-                    icon: Icon(Icons.search),
-                    label: 'Profile',
+                    selectedIcon: Icon(Icons.search),
+                    icon: Icon(Icons.search_outlined),
+                    label: 'Explore',
                   ),
                   NavigationDestination(
                     selectedIcon: Icon(Icons.add_box),
@@ -60,7 +97,8 @@ class _NavigationPageState extends State<NavigationPage> {
                     label: 'Create',
                   ),
                   NavigationDestination(
-                    icon: Icon(Icons.person),
+                    selectedIcon: Icon(Icons.person),
+                    icon: Icon(Icons.person_outlined),
                     label: 'Profile',
                   ),
                 ],
