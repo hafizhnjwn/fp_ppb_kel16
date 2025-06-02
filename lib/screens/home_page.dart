@@ -63,6 +63,7 @@ class _HomePageState extends State<HomePage> {
               String caption = postData['caption'] as String? ?? 'No caption';
               String username =
                   postData['username'] as String? ?? 'Unknown user';
+              int commentsCount = postData['commentsCount'] ?? 0;
 
               return Card(
                 margin: const EdgeInsets.symmetric(
@@ -186,6 +187,15 @@ class _HomePageState extends State<HomePage> {
                             );
                           },
                           child: Icon(Icons.chat_bubble_outline),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "$commentsCount",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ],
                     ),

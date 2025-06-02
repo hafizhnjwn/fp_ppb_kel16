@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -49,25 +50,26 @@ class FirestoreService {
     });
   }
 
-  Future<DocumentReference> createComment({
+  Future<void> createComment({
     required String postId,
-    required String commentText,
     required String userId,
     required String username,
+    required String commentText,
     required String userImageUrl,
   }) async {
-    final docRef = await commentsCollection.add({
+    // Add the comment
+    await commentsCollection.add({
       'postId': postId,
       'text': commentText,
       'userId': userId,
       'username': username,
-      'userImageUrl': userImageUrl,
+      'userImageUrl': '',
       'timestamp': FieldValue.serverTimestamp(),
     });
-    // Increment commentsCount on the post
+
+    // Increment the commentsCount in the post document
     await postsCollection.doc(postId).update({
       'commentsCount': FieldValue.increment(1),
     });
-    return docRef;
   }
 }
