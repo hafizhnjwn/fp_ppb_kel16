@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final CollectionReference usersCollection =
-      FirebaseFirestore.instance.collection('users');
-  final CollectionReference postsCollection =
-      FirebaseFirestore.instance.collection('posts');
+  final CollectionReference usersCollection = FirebaseFirestore.instance
+      .collection('users');
+  final CollectionReference postsCollection = FirebaseFirestore.instance
+      .collection('posts');
+  final CollectionReference commentsCollection = FirebaseFirestore.instance
+      .collection('comments');
 
   Future<void> createUserDocument(auth.User user, String username) async {
     return usersCollection.doc(user.uid).set({
@@ -44,6 +47,29 @@ class FirestoreService {
       'likesCount': 0,
       'likes': [],
       'commentsCount': 0,
+    });
+  }
+
+  Future<void> createComment({
+    required String postId,
+    required String userId,
+    required String username,
+    required String commentText,
+    required String userImageUrl,
+  }) async {
+    // Add the comment
+    await commentsCollection.add({
+      'postId': postId,
+      'text': commentText,
+      'userId': userId,
+      'username': username,
+      'userImageUrl': '',
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    // Increment the commentsCount in the post document
+    await postsCollection.doc(postId).update({
+      'commentsCount': FieldValue.increment(1),
     });
   }
 }
