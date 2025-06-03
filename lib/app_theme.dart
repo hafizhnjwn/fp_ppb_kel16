@@ -25,7 +25,9 @@ final ThemeData darkTheme = ThemeData(
     bodyLarge: TextStyle(color: Colors.white),
     bodyMedium: TextStyle(color: Colors.white),
   ),
-
+  inputDecorationTheme: InputDecorationTheme(
+    floatingLabelStyle: TextStyle(color: Colors.white),
+  ),
   bottomNavigationBarTheme: BottomNavigationBarThemeData(
     backgroundColor: Colors.black,
     selectedItemColor: Colors.white,
