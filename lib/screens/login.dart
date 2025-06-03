@@ -51,48 +51,129 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-        centerTitle: true,
-      ),
+      backgroundColor: Color(0xff152127),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Center(
           child: ListView(
             children: [
-              const SizedBox(height: 48),
-              Icon(Icons.lock_outline, size: 100, color: Colors.blue[200]),
-              const SizedBox(height: 48),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(label: Text('Email')),
+              const SizedBox(height: 100),
+              const SizedBox(
+                height: 72,
+                width: 72,
+                child: Image(
+                  image: AssetImage(
+                    'assets/images/Instagram_Glyph_Gradient.png',
+                  ),
+                ),
               ),
+              const SizedBox(height: 100),
               TextField(
+                cursorColor: Colors.white,
+                controller: _emailController,
+                decoration: InputDecoration(
+                  label: Text('Email'),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide(
+                      color: Color(0xff4599fe),
+                      width: 2,
+                    ),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide(
+                      color: Color(0xff375563),
+                      width: 1.5,
+                    ),
+                  ),
+                  fillColor: Colors.transparent,
+                  filled: true,
+                ),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                cursorColor: Colors.white,
                 controller: _passwordController,
                 obscureText: true,
-                decoration: const InputDecoration(label: Text('Password')),
+                decoration: InputDecoration(
+                  label: Text('Password'),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide(color: Color(0xff4599fe), width: 2),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide(
+                      color: Color(0xff375563),
+                      width: 1.5,
+                    ),
+                  ),
+                  fillColor: Colors.transparent,
+                  filled: true,
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               _errorCode != ""
                   ? Column(
-                  children: [Text(_errorCode), const SizedBox(height: 24)])
+                    children: [Text(_errorCode), const SizedBox(height: 12)],
+                  )
                   : const SizedBox(height: 0),
               OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: Color(0xff0064e0),
+                  side: BorderSide(width: 1.5, color: Color(0xff0064e0)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
                 onPressed: signIn,
-                child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text('Login'),
+                child:
+                    _isLoading
+                        ? const CircularProgressIndicator()
+                        : const Text(
+                          'Log in',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
               ),
+              const SizedBox(height: 10),
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Don\'t have an account?'),
-                  TextButton(
-                    onPressed: navigateRegister,
-                    child: const Text('Register'),
-                  )
+                children: <Widget>[
+                  Expanded(child: Divider(color: Colors.grey, thickness: 1)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text("OR"),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey, thickness: 1)),
                 ],
-              )
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: Color(0xff4599fe), // Text/icon color
+                  side: BorderSide(
+                    width: 1.5,
+                    color: Color(0xff4599fe),
+                  ), // ✅ Correct place for border
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+                onPressed: navigateRegister,
+                child: const Text(
+                    'Create New Account',
+                    style: TextStyle(
+                    color: Color(0xff4599fe),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
