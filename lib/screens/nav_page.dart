@@ -50,7 +50,7 @@ class _NavigationPageState extends State<NavigationPage> {
           final List<Widget> pages = [
             HomePage(userSnaphot: snapshot),
             const Center(child: Text("Explore Page")),
-            UserPage(userSnaphot: snapshot),
+            UserPage(userID: snapshot.data!.uid),
           ];
 
           return Scaffold(

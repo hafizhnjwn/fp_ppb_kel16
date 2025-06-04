@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
-import 'package:firebase_auth/firebase_auth.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -11,15 +10,18 @@ class FirestoreService {
   final CollectionReference commentsCollection = FirebaseFirestore.instance
       .collection('comments');
 
-  Future<void> createUserDocument(auth.User user, String username) async {
+  Future<void> createUserDocument(auth.User user, String username, String name, String profilePhotoUrl) async {
     return usersCollection.doc(user.uid).set({
       'uid': user.uid,
       'email': user.email,
+      'name': name,
       'username': username,
       'bio': '',
-      'profilePhotoUrl': '',
+      'profilePhotoUrl': profilePhotoUrl,
       'followers': [],
       'following': [],
+      'followersCount': 0,
+      'followingCount': 0,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -30,6 +32,22 @@ class FirestoreService {
 
   Future<void> updateUserProfile(String uid, Map<String, dynamic> data) {
     return usersCollection.doc(uid).update(data);
+  }
+
+  Future<bool> doesUsernameExist(String username) async {
+    final querySnapshot = await usersCollection
+                                .where('username', isEqualTo: username)
+                                .limit(1)
+                                .get();
+
+    return querySnapshot.docs.isNotEmpty;
+  }
+
+  Stream<QuerySnapshot> userPostsProfileStream(String userId) {
+    return postsCollection
+        .where('userId', isEqualTo: userId)
+        .orderBy('timestamp', descending: true) 
+        .snapshots();
   }
 
   Future<void> createPost({

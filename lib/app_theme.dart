@@ -34,6 +34,11 @@ final ThemeData darkTheme = ThemeData(
     unselectedItemColor: Colors.grey,
     showUnselectedLabels: false,
   ),
+  progressIndicatorTheme: ProgressIndicatorThemeData(
+    color: Colors.white,
+    circularTrackColor: Colors.grey[800], // optional
+  ),
+  primaryIconTheme: IconThemeData(color: Colors.white),
 );
 
 final ButtonStyle greyButtonStyle = ElevatedButton.styleFrom(

@@ -1,5 +1,9 @@
+// ignore_for_file: avoid_print
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fp_pbb_kel6/services/imgur_api.dart';
+import 'package:image_picker/image_picker.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,6 +16,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  final debug = true; //fast login and test function
+
   bool _isLoading = false;
   String _errorCode = "";
 
@@ -23,6 +29,13 @@ class _LoginScreenState extends State<LoginScreen> {
   void navigateHome() {
     if (!context.mounted) return;
     Navigator.pushReplacementNamed(context, 'home');
+  }
+
+  /// Test Function tanpa login
+  void _debugLogin() async {
+    _emailController.text = "test2@gmail.com";
+    _passwordController.text = "1234567890";
+    signIn();
   }
 
   void signIn() async {
@@ -174,6 +187,30 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+              if (debug)...{
+                OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Color(0xff4599fe), // Text/icon color
+                      side: BorderSide(
+                        width: 1.5,
+                        color: Color(0xff4599fe),
+                      ), // ✅ Correct place for border
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    onPressed: _debugLogin,
+                    child: const Text(
+                      'debug Auto login',
+                      style: TextStyle(
+                        color: Color(0xff4599fe),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+              },
             ],
           ),
         ),
