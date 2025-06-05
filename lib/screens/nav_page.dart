@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fp_pbb_kel6/screens/user_page.dart';
 import 'package:fp_pbb_kel6/screens/create_post.dart';
+import 'package:fp_pbb_kel6/screens/explore_page.dart';
 
 class NavigationPage extends StatefulWidget {
   const NavigationPage({super.key});
@@ -49,7 +50,7 @@ class _NavigationPageState extends State<NavigationPage> {
         if (snapshot.hasData) {
           final List<Widget> pages = [
             HomePage(userSnaphot: snapshot),
-            const Center(child: Text("Explore Page")),
+            const ExplorePage(),
             UserPage(userID: snapshot.data!.uid),
           ];
 
