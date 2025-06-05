@@ -6,6 +6,8 @@ import 'package:fp_pbb_kel6/app_theme.dart';
 import 'package:fp_pbb_kel6/services/firestore_service.dart';
 import 'package:shimmer/shimmer.dart';
 
+import 'detail_post.dart';
+
 class UserPage extends StatefulWidget {
   /// User Page for authenticated user and other user via uid
   const UserPage({super.key, required this.userID});
@@ -281,34 +283,41 @@ class _UserPageState extends State<UserPage> {
                           itemCount: docs.length,
                           itemBuilder: (context, index) {
                             final imageUrl = docs[index]["imageUrl"];
-                            return Stack(
-                              alignment: AlignmentDirectional.topEnd,
-                              children: [
-                                CachedNetworkImage(
-                                  imageUrl: imageUrl,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  placeholder:
-                                      (context, url) => Shimmer.fromColors(
-                                        baseColor: Colors.grey[300]!,
-                                        highlightColor: Colors.grey[100]!,
-                                        child: Container(
-                                          color: Colors.grey[300],
-                                        ),
-                                      ),
-                                  errorWidget:
-                                      (context, url, error) =>
-                                          const Icon(Icons.error),
-                                ),
-                                const Padding(
-                                  padding: EdgeInsets.all(5.0),
-                                  child: Icon(
-                                    Icons.photo_library_rounded,
-                                    color: Colors.white,
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DetailPost(imageUrl: imageUrl),
                                   ),
-                                ),
-                              ],
+                                );
+                              },
+                              child: Stack(
+                                alignment: AlignmentDirectional.topEnd,
+                                children: [
+                                  CachedNetworkImage(
+                                    imageUrl: imageUrl,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    placeholder: (context, url) => Shimmer.fromColors(
+                                      baseColor: Colors.grey[300]!,
+                                      highlightColor: Colors.grey[100]!,
+                                      child: Container(
+                                        color: Colors.grey[300],
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) => const Icon(Icons.error),
+                                  ),
+                                  const Padding(
+                                    padding: EdgeInsets.all(5.0),
+                                    child: Icon(
+                                      Icons.photo_library_rounded,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             );
                           },
                         );

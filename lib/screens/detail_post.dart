@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fp_pbb_kel6/screens/edit_post_page.dart';
 
 class DetailPost extends StatelessWidget {
   final String imageUrl;
@@ -10,13 +12,65 @@ class DetailPost extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Post Detail'),
+        actions: [
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('posts')
+                .where('imageUrl', isEqualTo: imageUrl)
+                .limit(1)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              final postData = snapshot.data!.docs.first.data() as Map<String, dynamic>;
+              final postOwnerId = postData['userId'] as String?;
+              final currentUser = FirebaseAuth.instance.currentUser;
+              if (currentUser != null && postOwnerId == currentUser.uid) {
+                return PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditPostPage(
+                            postId: snapshot.data!.docs.first.id,
+                            postData: postData,
+                          ),
+                        ),
+                      );
+                    } else if (value == 'delete') {
+                      await FirebaseFirestore.instance
+                          .collection('posts')
+                          .doc(snapshot.data!.docs.first.id)
+                          .delete();
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Text('Edit'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ],
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
       ),
-      body: FutureBuilder<QuerySnapshot>(
-        future: FirebaseFirestore.instance
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
             .collection('posts')
             .where('imageUrl', isEqualTo: imageUrl)
             .limit(1)
-            .get(),
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Error: \\${snapshot.error}'));
