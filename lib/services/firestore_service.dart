@@ -63,8 +63,6 @@ class FirestoreService {
       'caption': caption,
       'timestamp': FieldValue.serverTimestamp(),
       'likesCount': 0,
-      'likes': [],
-      'commentsCount': 0,
     });
   }
 
@@ -73,7 +71,7 @@ class FirestoreService {
     required String userId,
     required String username,
     required String commentText,
-    required String userImageUrl,
+    required String profilePhotoUrl,
   }) async {
     // Add the comment
     await commentsCollection.add({
@@ -81,13 +79,8 @@ class FirestoreService {
       'text': commentText,
       'userId': userId,
       'username': username,
-      'userImageUrl': '',
+      'profilePhotoUrl': profilePhotoUrl,
       'timestamp': FieldValue.serverTimestamp(),
-    });
-
-    // Increment the commentsCount in the post document
-    await postsCollection.doc(postId).update({
-      'commentsCount': FieldValue.increment(1),
     });
   }
 }

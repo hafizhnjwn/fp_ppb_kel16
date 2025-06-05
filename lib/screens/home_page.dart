@@ -63,7 +63,6 @@ class _HomePageState extends State<HomePage> {
               String caption = postData['caption'] as String? ?? 'No caption';
               String username =
                   postData['username'] as String? ?? 'Unknown user';
-              int commentsCount = postData['commentsCount'] ?? 0;
 
               return Card(
                 margin: const EdgeInsets.symmetric(
@@ -76,11 +75,16 @@ class _HomePageState extends State<HomePage> {
                   children: <Widget>[
                     Padding(
                       padding: const EdgeInsets.all(12.0),
-                      child: Text(
-                        username,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      child: GestureDetector(
+                        onTap: () {
+                        },
+                        child: Text(
+                          username,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -189,32 +193,172 @@ class _HomePageState extends State<HomePage> {
                           child: Icon(Icons.chat_bubble_outline),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          "$commentsCount",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                        StreamBuilder<QuerySnapshot>(
+                          stream:
+                              FirebaseFirestore.instance
+                                  .collection('comments')
+                                  .where('postId', isEqualTo: posts[index].id)
+                                  .snapshots(),
+                          builder: (context, snapshot) {
+                            int count =
+                                snapshot.hasData
+                                    ? snapshot.data!.docs.length
+                                    : 0;
+                            return Text(
+                              "$count",
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(12.0),
+                      padding: const EdgeInsets.only(left: 12.0, bottom: 4.0),
                       child: RichText(
                         text: TextSpan(
                           style: DefaultTextStyle.of(context).style,
-                          children: <TextSpan>[
-                            TextSpan(
-                              text: '$username ',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
+                          children: [
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.baseline,
+                              baseline: TextBaseline.alphabetic,
+                              child: GestureDetector(
+                                onTap: () {
+                                  // Handle username tap
+                                },
+                                child: Text(
+                                  '$username ',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ),
                             TextSpan(text: caption),
                           ],
                         ),
                       ),
+                    ),
+                    // Comment Preview Section
+                    StreamBuilder<QuerySnapshot>(
+                      stream:
+                          FirebaseFirestore.instance
+                              .collection('comments')
+                              .where('postId', isEqualTo: posts[index].id)
+                              .orderBy('timestamp', descending: false)
+                              .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+
+                        // Get total comment count
+                        int commentCount = snapshot.data!.docs.length;
+                        final comments = snapshot.data!.docs.take(
+                          2,
+                        ); // Take only first 2 comments
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ...comments.map((comment) {
+                                final commentData =
+                                    comment.data() as Map<String, dynamic>;
+                                return Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: 4.0,
+                                    left: 20.0,
+                                  ),
+                                  child: RichText(
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    text: TextSpan(
+                                      style: DefaultTextStyle.of(context).style,
+                                      children: [
+                                        WidgetSpan(
+                                          alignment:
+                                              PlaceholderAlignment.baseline,
+                                          baseline: TextBaseline.alphabetic,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              // Handle username tap
+                                            },
+                                            child: Text(
+                                              '${commentData['username']} ',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: commentData['text'],
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                              // Only show "View all comments" if there are more than 2 comments
+                              if (commentCount > 2)
+                                GestureDetector(
+                                  onTap: () {
+                                    showBottomSheet(
+                                      backgroundColor: Colors.transparent,
+                                      context: context,
+                                      builder: (context) {
+                                        return Padding(
+                                          padding: EdgeInsets.only(
+                                            bottom:
+                                                MediaQuery.of(
+                                                  context,
+                                                ).viewInsets.bottom,
+                                          ),
+                                          child: DraggableScrollableSheet(
+                                            maxChildSize: 1,
+                                            initialChildSize: 1,
+                                            minChildSize: 0.2,
+                                            builder: (
+                                              context,
+                                              scrollController,
+                                            ) {
+                                              return CommentsPage(
+                                                postId: posts[index].id,
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                      left: 20.0,
+                                      bottom: 4.0,
+                                    ),
+                                    child: Text(
+                                      'View all $commentCount comments',
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

@@ -17,12 +17,12 @@ class _CommentsPageState extends State<CommentsPage> {
   final FirestoreService _firestoreService = FirestoreService();
   final _commentController = TextEditingController();
 
-
   @override
   void initState() {
     super.initState();
     _currentUser = FirebaseAuth.instance.currentUser;
   }
+
   Future<void> _submitComment() async {
     if (_currentUser == null) {
       if (mounted) {
@@ -34,25 +34,26 @@ class _CommentsPageState extends State<CommentsPage> {
     }
 
     if (mounted) {
-      setState(() { _isLoading = true; });
+      setState(() {
+        _isLoading = true;
+      });
     }
 
     try {
-      String username = _currentUser!.displayName ?? "Anonymous";
-      DocumentSnapshot userData = await _firestoreService.getUserData(_currentUser!.uid);
-      if (userData.exists) {
-        final data = userData.data() as Map<String, dynamic>;
-        if (data.containsKey('username') && data['username'] != null && (data['username'] as String).isNotEmpty) {
-          username = data['username'];
-        }
-      }
+      final userData = await _firestoreService.getUserData(_currentUser!.uid);
+
+      final data = userData.data() as Map<String, dynamic>;
+      String profilePhotoUrl =
+          data['profilePhotoUrl'] ??
+          "https://via.placeholder.com/150?text=No+Image";
+      String username = data['username'] ?? "Unknown";
 
       await _firestoreService.createComment(
         userId: _currentUser!.uid,
         username: username,
         postId: widget.postId,
+        profilePhotoUrl: profilePhotoUrl,
         commentText: _commentController.text.trim(),
-        userImageUrl: _currentUser!.photoURL ?? "https://via.placeholder.com/150?text=No+Image",
       );
 
       if (!mounted) return;
@@ -60,20 +61,21 @@ class _CommentsPageState extends State<CommentsPage> {
         const SnackBar(
           content: Text("Comment created successfully!"),
           duration: Duration(seconds: 1),
-          ),
+        ),
       );
       setState(() {
         _commentController.clear();
       });
-
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving comment: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error saving comment: $e")));
     } finally {
       if (mounted) {
-        setState(() { _isLoading = false; });
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -108,12 +110,16 @@ class _CommentsPageState extends State<CommentsPage> {
             const SizedBox(height: 4),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('comments')
-                    .where('postId', isEqualTo: widget.postId)
-                    .orderBy('timestamp', descending: true)
-                    .snapshots(),
-                builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                stream:
+                    FirebaseFirestore.instance
+                        .collection('comments')
+                        .where('postId', isEqualTo: widget.postId)
+                        .orderBy('timestamp', descending: false)
+                        .snapshots(),
+                builder: (
+                  BuildContext context,
+                  AsyncSnapshot<QuerySnapshot> snapshot,
+                ) {
                   if (snapshot.hasError) {
                     return Center(
                       child: Text('Something went wrong: [${snapshot.error}]'),
@@ -138,14 +144,25 @@ class _CommentsPageState extends State<CommentsPage> {
                           comments[index].data() as Map<String, dynamic>;
 
                       return ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            (commentData['userImageUrl'] ?? "https://via.placeholder.com/150?text=No+Image") as String,
+                        leading: GestureDetector(
+                          onTap: () {
+                          },
+                          child: CircleAvatar(
+                            backgroundImage: NetworkImage(
+                              (commentData['profilePhotoUrl']) as String,
+                            ),
                           ),
                         ),
-                        title: Text(
-                          (commentData['username'] ?? "Unknown") as String,
-                          style: const TextStyle(color: Colors.white),
+                        title: GestureDetector(
+                          onTap: () {
+                          },
+                          child: Text(
+                            (commentData['username'] ?? "Unknown") as String,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                         subtitle: Text(
                           (commentData['text'] ?? "") as String,
@@ -159,19 +176,31 @@ class _CommentsPageState extends State<CommentsPage> {
             ),
             Container(
               color: Colors.grey[900],
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundImage: NetworkImage(
-                      "https://picsum.photos/200/200",
+                  FutureBuilder<DocumentSnapshot>(
+                    future: _firestoreService.getUserData(
+                      _currentUser?.uid ?? '',
                     ),
+                    builder: (context, snapshot) {
+                      String profilePhotoUrl =
+                          "https://via.placeholder.com/150?text=No+Image";
+
+                      if (snapshot.hasData && snapshot.data != null) {
+                        final userData =
+                            snapshot.data!.data() as Map<String, dynamic>?;
+                        profilePhotoUrl =
+                            userData?['profilePhotoUrl'] ?? profilePhotoUrl;
+                      }
+
+                      return CircleAvatar(
+                        radius: 20,
+                        backgroundImage: NetworkImage(profilePhotoUrl),
+                      );
+                    },
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -197,7 +226,9 @@ class _CommentsPageState extends State<CommentsPage> {
                         _submitComment();
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Comment cannot be empty.")),
+                          const SnackBar(
+                            content: Text("Comment cannot be empty."),
+                          ),
                         );
                       }
                     },
@@ -211,4 +242,3 @@ class _CommentsPageState extends State<CommentsPage> {
     );
   }
 }
-

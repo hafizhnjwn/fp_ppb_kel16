@@ -21,6 +21,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Instagram Clone',
+      debugShowCheckedModeBanner: false,
       initialRoute: 'login',
       theme: darkTheme,
       routes: {
