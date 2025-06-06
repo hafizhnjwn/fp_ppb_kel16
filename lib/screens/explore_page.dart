@@ -45,7 +45,7 @@ class ExplorePage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => DetailPost(imageUrl: imageUrl),
+                            builder: (context) => DetailPost(initialPostId: posts[index].id),
                           ),
                         );
                       },

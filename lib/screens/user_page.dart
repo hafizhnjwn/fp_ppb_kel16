@@ -288,7 +288,7 @@ class _UserPageState extends State<UserPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => DetailPost(imageUrl: imageUrl),
+                                    builder: (context) => DetailPost(initialPostId: docs[index].id),
                                   ),
                                 );
                               },
