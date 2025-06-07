@@ -7,14 +7,21 @@ import 'package:fp_pbb_kel6/screens/create_post.dart';
 import 'package:fp_pbb_kel6/screens/explore_page.dart';
 
 class NavigationPage extends StatefulWidget {
-  const NavigationPage({super.key});
+  final int initialIndex;
+  const NavigationPage({super.key, this.initialIndex = 0});
 
   @override
   State<NavigationPage> createState() => _NavigationPageState();
 }
 
 class _NavigationPageState extends State<NavigationPage> {
-  int _currentPageIndex = 0;
+  late int _currentPageIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPageIndex = widget.initialIndex;
+  }
 
   int _getPageIndex(int navIndex) {
     switch (navIndex) {

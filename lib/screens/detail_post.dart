@@ -3,25 +3,64 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fp_pbb_kel6/screens/edit_post_page.dart';
 import 'package:fp_pbb_kel6/screens/comments_page.dart';
+import 'package:fp_pbb_kel6/screens/nav_page.dart';
+import 'package:fp_pbb_kel6/screens/user_page.dart';
+import 'package:fp_pbb_kel6/services/firestore_service.dart';
 
 class DetailPost extends StatelessWidget {
   final String? initialPostId;
-  const DetailPost({super.key, this.initialPostId});
+  final String? query;
+  final String? userId;
+  final FirestoreService _firestoreService = FirestoreService();
+  final User? currentUser = FirebaseAuth.instance.currentUser;
+
+  DetailPost({
+    super.key, 
+    this.initialPostId,
+    this.query,
+    this.userId,
+  });
+
+  Stream<QuerySnapshot> _getPostsStream() {
+    final postsRef = FirebaseFirestore.instance.collection('posts');
+    
+    if (query == 'user_posts' && userId != null) {
+      return postsRef
+          .where('userId', isEqualTo: userId)
+          .orderBy('timestamp', descending: true)
+          .snapshots();
+    }
+    
+    return postsRef
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final scrollController = ScrollController();
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Posts'),
+        title: query == 'user_posts' 
+          ? FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  final userData = snapshot.data!.data() as Map<String, dynamic>?;
+                  final username = userData?['username'] ?? 'User';
+                  return Text('$username Posts');
+                }
+                return const Text('Posts');
+              },
+            )
+          : const Text('Posts'),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('posts')
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
+        stream: _getPostsStream(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text('Error: \\${snapshot.error}'));
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -29,15 +68,35 @@ class DetailPost extends StatelessWidget {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(child: Text('No posts found.'));
           }
+
           var posts = snapshot.data!.docs;
-          if (initialPostId != null) {
-            final idx = posts.indexWhere((doc) => doc.id == initialPostId);
-            if (idx > 0) {
-              final first = posts[idx];
-              posts = [first, ...posts.where((doc) => doc.id != initialPostId)];
+          
+          // Handle posts differently based on query type
+          if (query != 'user_posts' && initialPostId != null) {
+            // For default query - move initialPost to top
+            final initialIndex = posts.indexWhere((doc) => doc.id == initialPostId);
+            if (initialIndex >= 0) {
+              final initialPost = posts[initialIndex];
+              posts = [
+                initialPost,
+                ...posts.where((doc) => doc.id != initialPostId)
+              ];
+            }
+          } else if (query == 'user_posts' && initialPostId != null) {
+            final initialIndex = posts.indexWhere((doc) => doc.id == initialPostId);
+            if (initialIndex >= 0) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                scrollController.animateTo(
+                  initialIndex * (300 + 16.0),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              });
             }
           }
+
           return ListView.builder(
+            controller: query == 'user_posts' ? scrollController : null,
             itemCount: posts.length,
             itemBuilder: (context, index) {
               final postData = posts[index].data() as Map<String, dynamic>;
@@ -52,59 +111,121 @@ class DetailPost extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            username,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12.0),
+                      child: SizedBox(
+                        height: 32, // Fixed height container
+                        child: Row(
+                          children: [
+                            // Profile Photo
+                            GestureDetector(
+                              onTap: () {
+                                if (postData['userId'] == currentUser?.uid) {
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                      builder: (context) => const NavigationPage(initialIndex: 2),
+                                    ),
+                                  );
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => UserPage(userID: postData['userId']),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: StreamBuilder<String>(
+                                stream: _firestoreService.getUserProfilePhotoUrl(postData['userId']),
+                                builder: (context, snapshot) {
+                                  return CircleAvatar(
+                                    radius: 16,
+                                    backgroundImage: NetworkImage(
+                                      snapshot.data ?? 'https://via.placeholder.com/32?text=No+Image',
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                          Builder(
-                            builder: (context) {
-                              final postOwnerId = postData['userId'] as String?;
-                              final currentUser = FirebaseAuth.instance.currentUser;
-                              if (currentUser != null && postOwnerId == currentUser.uid) {
-                                return PopupMenuButton<String>(
-                                  icon: const Icon(Icons.more_vert, color: Colors.white),
-                                  onSelected: (value) async {
-                                    if (value == 'edit') {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => EditPostPage(
-                                            postId: postId,
-                                            postData: postData,
-                                          ),
+                            const SizedBox(width: 8),
+                            
+                            // Username
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (postData['userId'] == currentUser?.uid) {
+                                    Navigator.of(context).pushReplacement(
+                                      MaterialPageRoute(
+                                        builder: (context) => const NavigationPage(initialIndex: 2),
+                                      ),
+                                    );
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UserPage(userID: postData['userId']),
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: Text(
+                                  username,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            // Menu Button Area
+                            SizedBox(
+                              width: 40,
+                              height: 32, // Match parent height
+                              child: Builder(
+                                builder: (context) {
+                                  final postOwnerId = postData['userId'] as String?;
+                                  final currentUser = FirebaseAuth.instance.currentUser;
+                                  if (currentUser != null && postOwnerId == currentUser.uid) {
+                                    return PopupMenuButton<String>(
+                                      padding: EdgeInsets.zero, // Remove internal padding
+                                      icon: const Icon(Icons.more_vert, color: Colors.white),
+                                      onSelected: (value) async {
+                                        if (value == 'edit') {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => EditPostPage(
+                                                postId: postId,
+                                                postData: postData,
+                                              ),
+                                            ),
+                                          );
+                                        } else if (value == 'delete') {
+                                          await FirebaseFirestore.instance
+                                              .collection('posts')
+                                              .doc(postId)
+                                              .delete();
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'edit',
+                                          child: Text('Edit'),
                                         ),
-                                      );
-                                    } else if (value == 'delete') {
-                                      await FirebaseFirestore.instance
-                                          .collection('posts')
-                                          .doc(postId)
-                                          .delete();
-                                    }
-                                  },
-                                  itemBuilder: (context) => [
-                                    const PopupMenuItem(
-                                      value: 'edit',
-                                      child: Text('Edit'),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Text('Delete'),
-                                    ),
-                                  ],
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ],
+                                        const PopupMenuItem(
+                                          value: 'delete',
+                                          child: Text('Delete'),
+                                        ),
+                                      ],
+                                    );
+                                  }
+                                  return const SizedBox(); // Empty placeholder with same dimensions
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     if (imageUrl.isNotEmpty && imageUrl != 'https://via.placeholder.com/150?text=No+Image')
@@ -124,10 +245,24 @@ class DetailPost extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.favorite_border, color: Colors.white),
-                          onPressed: () {
-                            // TODO: Implement like
+                        StreamBuilder<bool>(
+                          stream: _firestoreService.isPostLiked(
+                            posts[index].id,
+                            currentUser?.uid ?? '',
+                          ),
+                          builder: (context, snapshot) {
+                            bool isLiked = snapshot.data ?? false;
+                            
+                            return IconButton(
+                              icon: Icon(
+                                isLiked ? Icons.favorite : Icons.favorite_border,
+                                color: isLiked ? Colors.red : Colors.white,
+                              ),
+                              onPressed: () {
+                                if (currentUser == null) return;
+                                _firestoreService.toggleLike(posts[index].id, currentUser!.uid);
+                              },
+                            );
                           },
                         ),
                         GestureDetector(

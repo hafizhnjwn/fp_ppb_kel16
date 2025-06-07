@@ -2,6 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fp_pbb_kel6/screens/comments_page.dart';
+import 'package:fp_pbb_kel6/screens/edit_post_page.dart';
+import 'package:fp_pbb_kel6/screens/nav_page.dart';
+import 'package:fp_pbb_kel6/screens/user_page.dart';
+import 'package:fp_pbb_kel6/services/firestore_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.userSnaphot});
@@ -12,6 +16,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final FirestoreService _firestoreService = FirestoreService();
+
   void logout(context) async {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacementNamed(context, 'login');
@@ -74,17 +80,120 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: GestureDetector(
-                        onTap: () {
-                        },
-                        child: Text(
-                          username,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
+                      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 12.0),
+                      child: SizedBox(
+                        height: 32, // Fixed height container
+                        child: Row(
+                          children: [
+                            // Profile Photo
+                            GestureDetector(
+                              onTap: () {
+                                if (postData['userId'] == currentUser?.uid) {
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                      builder: (context) => const NavigationPage(initialIndex: 2),
+                                    ),
+                                  );
+                                } else {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => UserPage(userID: postData['userId']),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: StreamBuilder<String>(
+                                stream: _firestoreService.getUserProfilePhotoUrl(postData['userId']),
+                                builder: (context, snapshot) {
+                                  return CircleAvatar(
+                                    radius: 16,
+                                    backgroundImage: NetworkImage(
+                                      snapshot.data ?? 'https://via.placeholder.com/32?text=No+Image',
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            
+                            // Username
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (postData['userId'] == currentUser?.uid) {
+                                    Navigator.of(context).pushReplacement(
+                                      MaterialPageRoute(
+                                        builder: (context) => const NavigationPage(initialIndex: 2),
+                                      ),
+                                    );
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UserPage(userID: postData['userId']),
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: Text(
+                                  username,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            // Menu Button Area
+                            SizedBox(
+                              width: 40,
+                              height: 32, // Match parent height
+                              child: Builder(
+                                builder: (context) {
+                                  final postOwnerId = postData['userId'] as String?;
+                                  final currentUser = FirebaseAuth.instance.currentUser;
+                                  if (currentUser != null && postOwnerId == currentUser.uid) {
+                                    return PopupMenuButton<String>(
+                                      padding: EdgeInsets.zero, // Remove internal padding
+                                      icon: const Icon(Icons.more_vert, color: Colors.white),
+                                      onSelected: (value) async {
+                                        if (value == 'edit') {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => EditPostPage(
+                                                postId: posts[index].id,
+                                                postData: postData,
+                                              ),
+                                            ),
+                                          );
+                                        } else if (value == 'delete') {
+                                          await FirebaseFirestore.instance
+                                              .collection('posts')
+                                              .doc(posts[index].id)
+                                              .delete();
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem(
+                                          value: 'edit',
+                                          child: Text('Edit'),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'delete',
+                                          child: Text('Delete'),
+                                        ),
+                                      ],
+                                    );
+                                  }
+                                  return const SizedBox(); // Empty placeholder with same dimensions
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -157,10 +266,25 @@ class _HomePageState extends State<HomePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.favorite_border),
-                          onPressed: () {
-                            // Handle like action
+                        StreamBuilder<bool>(
+                          stream: _firestoreService.isPostLiked(
+                            posts[index].id,
+                            currentUser?.uid ?? '',
+                          ),
+                          builder: (context, snapshot) {
+                            bool isLiked = snapshot.data ?? false;
+
+                            return IconButton(
+                              icon: Icon(
+                                isLiked ? Icons.favorite : Icons.favorite_border,
+                                color: isLiked ? Colors.red : Colors.white,
+                              ),
+                              onPressed: () {
+                                if (currentUser == null) return;
+                                _firestoreService.toggleLike(posts[index].id,
+                                    currentUser.uid);
+                              },
+                            );
                           },
                         ),
                         GestureDetector(
@@ -227,7 +351,25 @@ class _HomePageState extends State<HomePage> {
                               baseline: TextBaseline.alphabetic,
                               child: GestureDetector(
                                 onTap: () {
-                                  // Handle username tap
+                                  if (postData['userId'] == currentUser?.uid) {
+                                    // Update page index to show profile tab
+                                    Navigator.of(context).pushReplacement(
+                                      MaterialPageRoute(
+                                        builder: (context) => const NavigationPage(
+                                            initialIndex: 2), // 2 is the profile page index
+                                      ),
+                                    );
+                                  } else {
+                                    // Navigate to other user's profile
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UserPage(
+                                          userID: postData['userId'],
+                                        ),
+                                      ),
+                                    );
+                                  }
                                 },
                                 child: Text(
                                   '$username ',
@@ -288,6 +430,25 @@ class _HomePageState extends State<HomePage> {
                                           child: GestureDetector(
                                             onTap: () {
                                               // Handle username tap
+                                              if (postData['userId'] == currentUser?.uid) {
+                                                // Update page index to show profile tab
+                                                Navigator.of(context).pushReplacement(
+                                                  MaterialPageRoute(
+                                                    builder: (context) => const NavigationPage(
+                                                        initialIndex: 2), // 2 is the profile page index
+                                                  ),
+                                                );
+                                              } else {
+                                                // Navigate to other user's profile
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => UserPage(
+                                                      userID: postData['userId'],
+                                                    ),
+                                                  ),
+                                                );
+                                              }
                                             },
                                             child: Text(
                                               '${commentData['username']} ',

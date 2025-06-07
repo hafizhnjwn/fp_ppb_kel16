@@ -9,8 +9,15 @@ class FirestoreService {
       .collection('posts');
   final CollectionReference commentsCollection = FirebaseFirestore.instance
       .collection('comments');
+  final CollectionReference likesCollection = FirebaseFirestore.instance
+      .collection('likes');
 
-  Future<void> createUserDocument(auth.User user, String username, String name, String profilePhotoUrl) async {
+  Future<void> createUserDocument(
+    auth.User user,
+    String username,
+    String name,
+    String profilePhotoUrl,
+  ) async {
     return usersCollection.doc(user.uid).set({
       'uid': user.uid,
       'email': user.email,
@@ -30,15 +37,26 @@ class FirestoreService {
     return usersCollection.doc(uid).get();
   }
 
+  Stream<String> getUserProfilePhotoUrl(String userId) {
+    return usersCollection
+        .doc(userId)
+        .snapshots()
+        .map((snapshot) => 
+            (snapshot.data() as Map<String, dynamic>)?['profilePhotoUrl'] as String? ?? 
+            'https://via.placeholder.com/32?text=No+Image'
+        );
+  }
+
   Future<void> updateUserProfile(String uid, Map<String, dynamic> data) {
     return usersCollection.doc(uid).update(data);
   }
 
   Future<bool> doesUsernameExist(String username) async {
-    final querySnapshot = await usersCollection
-                                .where('username', isEqualTo: username)
-                                .limit(1)
-                                .get();
+    final querySnapshot =
+        await usersCollection
+            .where('username', isEqualTo: username)
+            .limit(1)
+            .get();
 
     return querySnapshot.docs.isNotEmpty;
   }
@@ -46,7 +64,7 @@ class FirestoreService {
   Stream<QuerySnapshot> userPostsProfileStream(String userId) {
     return postsCollection
         .where('userId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true) 
+        .orderBy('timestamp', descending: true)
         .snapshots();
   }
 
@@ -82,5 +100,37 @@ class FirestoreService {
       'profilePhotoUrl': profilePhotoUrl,
       'timestamp': FieldValue.serverTimestamp(),
     });
+  }
+
+  // Check if post is liked by user
+  Stream<bool> isPostLiked(String postId, String userId) {
+    return likesCollection
+        .where('postId', isEqualTo: postId)
+        .where('userId', isEqualTo: userId)
+        .limit(1)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.isNotEmpty);
+  }
+
+  // Toggle like status
+  Future<void> toggleLike(String postId, String userId) async {
+    final querySnapshot =
+        await likesCollection
+            .where('postId', isEqualTo: postId)
+            .where('userId', isEqualTo: userId)
+            .limit(1)
+            .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      // Unlike
+      await likesCollection.doc(querySnapshot.docs.first.id).delete();
+    } else {
+      // Like
+      await likesCollection.add({
+        'postId': postId,
+        'userId': userId,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    }
   }
 }

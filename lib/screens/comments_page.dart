@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fp_pbb_kel6/screens/nav_page.dart';
+import 'package:fp_pbb_kel6/screens/user_page.dart';
 import 'package:fp_pbb_kel6/services/firestore_service.dart';
 
 class CommentsPage extends StatefulWidget {
@@ -146,6 +148,26 @@ class _CommentsPageState extends State<CommentsPage> {
                       return ListTile(
                         leading: GestureDetector(
                           onTap: () {
+                            if (commentData['userId'] == _currentUser?.uid) {
+                              // Update page index to show profile tab
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) => const NavigationPage(
+                                      initialIndex: 2), // 2 is the profile page index
+                                ),
+                              );
+                            } else {
+                              // Navigate to other user's profile
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => UserPage(
+                                    userID: commentData['userId'],
+                                  ),
+                                ),
+                              );
+                            }
+
                           },
                           child: CircleAvatar(
                             backgroundImage: NetworkImage(
@@ -155,6 +177,25 @@ class _CommentsPageState extends State<CommentsPage> {
                         ),
                         title: GestureDetector(
                           onTap: () {
+                            if (commentData['userId'] == _currentUser?.uid) {
+                              // Update page index to show profile tab
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) => const NavigationPage(
+                                      initialIndex: 2), // 2 is the profile page index
+                                ),
+                              );
+                            } else {
+                              // Navigate to other user's profile
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => UserPage(
+                                    userID: commentData['userId'],
+                                  ),
+                                ),
+                              );
+                            }
                           },
                           child: Text(
                             (commentData['username'] ?? "Unknown") as String,
